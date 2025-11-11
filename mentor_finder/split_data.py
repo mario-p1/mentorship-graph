@@ -3,6 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from mentor_finder.data import load_raw_committee_csv
+from mentor_finder.embedding import embed_text
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -38,6 +41,12 @@ def parse_args():
         default=0.1,
         help="Fraction of data for testing (default: 0.1)",
     )
+    parser.add_argument(
+        "--embedding-model",
+        type=str,
+        default="all-MiniLM-L6-v2",
+        help='Embedding model to use (see SentenceTransformers available models) or "none" to skip embedding (default: all-MiniLM-L6-v2)',
+    )
     return parser.parse_args()
 
 
@@ -66,7 +75,14 @@ def main():
     val_frac = args.val_frac
     test_frac = args.test_frac
 
-    df = pd.read_csv(input_file)
+    embedding_model = args.embedding_model
+
+    df = load_raw_committee_csv(input_file)
+
+    if embedding_model != "none":
+        df["thesis_desc_embedding"] = embed_text(
+            df["thesis_desc_en"].tolist(), model_name=embedding_model
+        ).tolist()
 
     train_df, val_df, test_df = split_train_test_val(
         df, train_fraction=train_frac, val_fraction=val_frac, test_fraction=test_frac

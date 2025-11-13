@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 from torch_geometric.data import HeteroData
 
+
 from mentor_finder.embedding import embed_text
 
 
@@ -34,19 +35,22 @@ def build_graph(df: pd.DataFrame) -> tuple[HeteroData, dict[str, Any]]:
     mentors = sorted(df["mentor"].unique().tolist())
     mentors_dict = {mentor: index for index, mentor in enumerate(mentors)}
 
-    mentor_features = torch.ones((len(mentors), 1))
-
     # Supervises relation
-    supervises_source = df["mentor"].apply(lambda mentor: mentors_dict[mentor])
-    supervises_destination = df.index.tolist()
+    supervises_mentor = df["mentor"].apply(lambda mentor: mentors_dict[mentor])
+    supervises_thesis = df.index.tolist()
     supervises_features = torch.vstack(
-        [torch.IntTensor(supervises_source), torch.IntTensor(supervises_destination)]
+        [torch.LongTensor(supervises_mentor), torch.LongTensor(supervises_thesis)]
     )
 
     # Build graph
     graph = HeteroData()
+    graph["thesis"].node_id = torch.arange(len(df))
     graph["thesis"].x = thesis_features
-    graph["mentor"].x = mentor_features
+    graph["mentor"].node_id = torch.arange(len(mentors))
     graph["mentor", "supervises", "thesis"].edge_index = supervises_features
+    graph["thesis", "supervised_by", "mentor"].edge_index = supervises_features.flip(0)
+
+    # Validate the constructed graph
+    graph.validate()
 
     return graph, {"mentors_dict": mentors_dict}

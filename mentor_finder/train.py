@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+from sklearn.metrics import classification_report
 import torch
 import torch.nn.functional as F
 import torch_geometric.transforms as T
@@ -41,22 +42,34 @@ def train_epoch(
 
 def validate(model: Model, loader: LinkNeighborLoader, device: torch.device):
     model.eval()
+    all_preds = []
+    all_labels = []
     total_loss = total_examples = 0
     with torch.no_grad():
         for sampled_data in loader:
             sampled_data = sampled_data.to(device)
 
             pred = model.forward(sampled_data)
+            labels = sampled_data["thesis", "supervised_by", "mentor"].edge_label.cpu()
+
+            all_preds.append((pred > 0).cpu().int())
+            all_labels.append(labels)
 
             loss = F.binary_cross_entropy_with_logits(
                 pred,
-                sampled_data["thesis", "supervised_by", "mentor"].edge_label.float(),
+                labels.float(),
             )
-
             total_loss += loss.item() * pred.numel()
             total_examples += pred.numel()
 
-    return total_loss / total_examples
+    return {
+        "loss": total_loss / total_examples,
+        "classification_report": classification_report(
+            torch.cat(all_labels),
+            torch.cat(all_preds),
+            zero_division=0,
+        ),
+    }
 
 
 def main():
@@ -76,7 +89,7 @@ def main():
         num_val=0.1,
         num_test=0.1,
         disjoint_train_ratio=0.7,
-        neg_sampling_ratio=2,
+        neg_sampling_ratio=1,
         add_negative_train_samples=True,
         edge_types=[("thesis", "supervised_by", "mentor")],
         rev_edge_types=[("mentor", "supervises", "thesis")],
@@ -127,8 +140,9 @@ def main():
         train_loss = train_epoch(model, train_loader, optimizer, device)
         val_loss = validate(model, val_loader, device)
         print(
-            f"Epoch {epoch:02d}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}"
+            f"Epoch {epoch:02d}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss['loss']:.4f}"
         )
+        print(val_loss["classification_report"])
 
 
 if __name__ == "__main__":

@@ -80,7 +80,7 @@ def validate(
 
 def main():
     # Hyperparameters
-    disjoint_train_ratio = 0.5
+    disjoint_train_ratio = 0.6
     neg_sampling_ratio = 1.0
     add_negative_train_samples = True
 

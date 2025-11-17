@@ -15,8 +15,8 @@ import torch_geometric.transforms as T
 import tqdm
 from torch_geometric.loader import LinkNeighborLoader
 import mlflow
-from mentor_finder.data import build_graph, load_raw_committee_csv
-from mentor_finder.model import Model
+from thesis_graph.data import build_graph, load_raw_committee_csv
+from thesis_graph.model import Model
 
 
 def train_epoch(

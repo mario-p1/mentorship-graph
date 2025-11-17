@@ -1,6 +1,8 @@
-# Mentorship Graph
-This project explores bachelor thesis abstracts and analyzes the relationships between students, their mentors, and commission members.
-The system provides a predictive model that recommends the most suitable mentor for a given bachelor thesis abstract based on historical data and relationship patterns.
+# Thesis Graph
+This repository investigates the structural and textual relationships that arise in the supervision and evaluation of bachelor theses. We construct a graph-based representation linking student authors, supervising mentors, and examination committee members, and analyze historical interaction patterns to characterize mentorship relationships.
+
+The primary contribution is a predictive framework that, given a bachelor thesis abstract, estimates the most suitable supervisor by integrating textual features, relational graph information, and historical assignment data.
+
 
 ## Development
 ### Requirements
@@ -8,12 +10,18 @@ The system provides a predictive model that recommends the most suitable mentor 
 
 ### Project Setup
 ```bash
-uv sync
+# For CPU only machines
+make install_deps_cpu
+
+# For GPU enabled machines with CUDA 12.8
+make install_deps_cu128
 ```
 
 ### Data
-1. Place the `committee.csv` file inside the `data` folder.
-2. Split the dataset into train/validation/test sets: 
+The data folder should contain the following files:
+1. `committee.csv`
+
+### Train
 ```bash
-uv run python -m split_data
+make train
 ```

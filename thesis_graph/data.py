@@ -6,7 +6,7 @@ import torch
 from torch_geometric.data import HeteroData
 
 
-from mentor_finder.embedding import embed_text
+from thesis_graph.embedding import embed_text
 
 
 def load_raw_committee_csv(path: Path) -> pd.DataFrame:

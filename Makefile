@@ -1,6 +1,6 @@
 .PHONY:
 train:
-	uv run python -m mentor_finder.train
+	uv run python -m thesis_graph.train
 
 .PHONY:
 install_deps_cpu:

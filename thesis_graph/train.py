@@ -83,10 +83,10 @@ def main():
     disjoint_train_ratio = 0.7
     neg_sampling_train_ratio = 1
     neg_sampling_val_test_ratio = 1.0
-    num_epochs = 100
-    node_embedding_channels = 256
+    num_epochs = 14
+    node_embedding_channels = 128
     hidden_channels = 64
-    learning_rate = 0.00001
+    learning_rate = 0.0001
     gnn_num_layers = 2
 
     seed_everything(42)

@@ -3,6 +3,7 @@ from torch import Tensor
 from torch_geometric.data import HeteroData
 from torch_geometric.nn import SAGEConv, to_hetero
 import torch.nn.functional as F
+from torch_geometric.nn.models import GraphSAGE
 
 
 class GNN(torch.nn.Module):
@@ -29,13 +30,27 @@ class Classifier(torch.nn.Module):
 
 
 class Model(torch.nn.Module):
-    def __init__(self, hidden_channels: int, data: HeteroData):
+    def __init__(
+        self,
+        node_embedding_channels: int,
+        hidden_channels: int,
+        gnn_num_layers: int,
+        data: HeteroData,
+    ):
         super().__init__()
-        self.thesis_lin = torch.nn.Linear(384, hidden_channels)
-        self.thesis_emb = torch.nn.Embedding(data["thesis"].num_nodes, hidden_channels)
-        self.mentor_emb = torch.nn.Embedding(data["mentor"].num_nodes, hidden_channels)
+        self.thesis_lin = torch.nn.Linear(384, node_embedding_channels)
+        self.thesis_emb = torch.nn.Embedding(
+            data["thesis"].num_nodes, node_embedding_channels
+        )
+        self.mentor_emb = torch.nn.Embedding(
+            data["mentor"].num_nodes, node_embedding_channels
+        )
 
-        self.gnn = GNN(hidden_channels)
+        self.gnn = GraphSAGE(
+            in_channels=node_embedding_channels,
+            hidden_channels=hidden_channels,
+            num_layers=gnn_num_layers,
+        )
         self.gnn = to_hetero(self.gnn, metadata=data.metadata())
 
         self.classifier = Classifier()

@@ -80,9 +80,14 @@ def validate(
 
 def main():
     # Hyperparameters
-    disjoint_train_ratio = 0.6
-    neg_sampling_train_ratio = 2.0
+    disjoint_train_ratio = 0.7
+    neg_sampling_train_ratio = 1
     neg_sampling_val_test_ratio = 1.0
+    num_epochs = 100
+    node_embedding_channels = 256
+    hidden_channels = 64
+    learning_rate = 0.00001
+    gnn_num_layers = 2
 
     seed_everything(42)
     pd.options.display.max_rows = 20
@@ -100,6 +105,11 @@ def main():
     mlflow.log_param("disjoint_train_ratio", disjoint_train_ratio)
     mlflow.log_param("neg_sampling_train_ratio", neg_sampling_train_ratio)
     mlflow.log_param("neg_sampling_val_test_ratio", neg_sampling_val_test_ratio)
+    mlflow.log_param("num_epochs", num_epochs)
+    mlflow.log_param("node_embedding_channels", node_embedding_channels)
+    mlflow.log_param("hidden_channels", hidden_channels)
+    mlflow.log_param("learning_rate", learning_rate)
+    mlflow.log_param("gnn_num_layers", gnn_num_layers)
 
     transform = T.RandomLinkSplit(
         num_val=0.1,
@@ -120,7 +130,7 @@ def main():
     train_loader = LinkNeighborLoader(
         data=train_data,
         num_neighbors=[20, 10],
-        batch_size=64,
+        batch_size=256,
         edge_label_index=(
             ("thesis", "supervised_by", "mentor"),
             train_data["thesis", "supervised_by", "mentor"].edge_label_index,
@@ -142,7 +152,12 @@ def main():
         shuffle=False,
     )
 
-    model = Model(hidden_channels=64, data=train_data)
+    model = Model(
+        node_embedding_channels=node_embedding_channels,
+        hidden_channels=hidden_channels,
+        gnn_num_layers=gnn_num_layers,
+        data=train_data,
+    )
     print("=> Model")
     print(model)
 
@@ -150,18 +165,23 @@ def main():
     print(f"=> Using device: {device}")
 
     model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    for epoch in range(1, 16):
+    val_best_f1 = 0
+    val_best_recall = 0
+
+    for epoch in range(1, num_epochs + 1):
         train_loss = train_epoch(model, train_loader, optimizer, device)
 
         val_loss, val_preds, val_labels = validate(model, val_loader, device)
 
         # breakpoint()
         val_accuracy = accuracy_score(val_labels, val_preds)
-        val_f1 = f1_score(val_labels, val_preds)
+        val_f1 = f1_score(val_labels, val_preds, average="weighted")
+        val_best_f1 = max(val_best_f1, val_f1)
         precision = precision_score(val_labels, val_preds)
         recall = recall_score(val_labels, val_preds)
+        val_best_recall = max(val_best_recall, recall)
 
         mlflow.log_metric("train_loss", train_loss, step=epoch)
         mlflow.log_metric("val_loss", val_loss, step=epoch)
@@ -173,6 +193,12 @@ def main():
         print(
             f"Epoch {epoch:02d}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}"
         )
+
+    print("=> Val best metrics:")
+    print("F1 Score:", val_best_f1)
+    print(f"Recall: {val_best_recall:.4f}")
+    mlflow.log_metric("val_best_f1", val_best_f1)
+    mlflow.log_metric("val_best_recall", val_best_recall)
 
     _, final_preds, final_labels = validate(model, val_loader, device)
     print("Validation Classification Report:")

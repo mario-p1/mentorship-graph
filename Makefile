@@ -3,6 +3,10 @@ train:
 	uv run python -m thesis_graph.train
 
 .PHONY:
+mlflow_ui:
+	uv run python -m mlflow ui
+
+.PHONY:
 install_deps_cpu:
 	uv sync
 	uv pip install pyg_lib -f https://data.pyg.org/whl/torch-2.8.0+cpu.html

@@ -1,3 +1,4 @@
+from datetime import datetime
 import itertools
 import json
 import os
@@ -8,7 +9,9 @@ from typing import Any
 import serpapi
 import tqdm
 
-from thesis_graph.data import load_raw_committee_csv
+from thesis_graph.data import load_thesis_csv
+
+base_data_path = Path(__file__).parent.parent / "data"
 
 
 def convert_cyrillic_to_latin(text: str) -> list[list[str]]:
@@ -81,11 +84,18 @@ def get_scholar_profiles(
 def search_for_multiple_cyrillic_names(
     client: serpapi.Client,
     cyrillic_names: list[str],
-    query_suffix=", FINKI",
-    max_searches: int = 100,
+    query_suffix="",
+    max_searches: int = 5,
 ) -> list[dict[str, Any]]:
     result_profiles = []
     search_counter = max_searches
+
+    save_path = (
+        base_data_path
+        / "scholar_crawls"
+        / f"profiles_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
+    save_path.parent.mkdir(parents=True, exist_ok=True)
 
     for name in tqdm.tqdm(cyrillic_names):
         name_variants = convert_cyrillic_to_latin(name)
@@ -103,11 +113,7 @@ def search_for_multiple_cyrillic_names(
                             **scholar_profile,
                         }
                     )
-                    with open(
-                        base_data_path / "google_scholar_profiles.json",
-                        "w",
-                        encoding="utf-8",
-                    ) as f:
+                    with open(save_path, "w", encoding="utf-8") as f:
                         json.dump(result_profiles, f, ensure_ascii=False, indent=4)
                 break
 
@@ -118,9 +124,6 @@ def search_for_multiple_cyrillic_names(
     return result_profiles
 
 
-base_data_path = Path(__file__).parent.parent / "data"
-
-
 def main():
     serpapi_api_key = os.getenv("SERPAPI_API_KEY")
     if serpapi_api_key is None:
@@ -129,14 +132,22 @@ def main():
     client = serpapi.Client(api_key=serpapi_api_key)
 
     researchers = (
-        load_raw_committee_csv(base_data_path / "committee.csv")["mentor"]
-        .unique()
-        .tolist()
+        load_thesis_csv(base_data_path / "committee.csv")["mentor"].unique().tolist()
     )
+    query_suffix = ", FINKI"
+
+    # researchers = ["Ласко Баснарков", "Милош Јовановиќ"]
+    # query_suffix = ""
+
     print("== Researchers ==")
     print(researchers)
 
-    search_for_multiple_cyrillic_names(client, researchers, max_searches=150)
+    search_for_multiple_cyrillic_names(
+        client,
+        researchers,
+        query_suffix=query_suffix,
+        max_searches=len(researchers) * 2,
+    )
 
 
 if __name__ == "__main__":

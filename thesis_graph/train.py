@@ -16,7 +16,7 @@ from sklearn.metrics import (
 from torch_geometric import seed_everything
 from torch_geometric.loader import LinkNeighborLoader
 
-from thesis_graph.data import build_graph, load_raw_committee_csv
+from thesis_graph.data import build_graph, load_thesis_csv
 from thesis_graph.model import Model
 
 
@@ -95,7 +95,7 @@ def main():
     pd.options.display.max_rows = 20
     pd.options.display.max_columns = 20
 
-    df = load_raw_committee_csv(Path(__file__).parent.parent / "data" / "committee.csv")
+    df = load_thesis_csv(Path(__file__).parent.parent / "data" / "committee.csv")
     # df = df.head(20)
 
     data, metadata = build_graph(df)

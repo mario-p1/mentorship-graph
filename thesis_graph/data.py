@@ -9,7 +9,7 @@ from torch_geometric.data import HeteroData
 from thesis_graph.embedding import embed_text
 
 
-def load_raw_committee_csv(path: Path) -> pd.DataFrame:
+def load_thesis_csv(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     df.columns = [
         "thesis_title_mk",

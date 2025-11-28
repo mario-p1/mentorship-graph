@@ -1,7 +1,3 @@
-import itertools
-import json
-from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 import serpapi
@@ -9,59 +5,12 @@ import tqdm
 
 from data_builder.serpapi_client import get_serpapi_client
 from thesis_graph.data import load_thesis_csv
-
-base_data_path = Path(__file__).parent.parent / "data"
-
-
-def convert_cyrillic_to_latin(text: str) -> list[list[str]]:
-    alphabet = {
-        "А": ["A"],
-        "Б": ["B"],
-        "В": ["V"],
-        "Г": ["G"],
-        "Д": ["D"],
-        "Ѓ": ["G", "Gj"],
-        "Е": ["E"],
-        "Ж": ["Zh", "Z"],
-        "З": ["Z"],
-        "Ѕ": ["Dz"],
-        "И": ["I"],
-        "Ј": ["J"],
-        "К": ["K"],
-        "Л": ["L"],
-        "Љ": ["Lj", "L"],
-        "М": ["M"],
-        "Н": ["N"],
-        "Њ": ["Nj", "N"],
-        "О": ["O"],
-        "П": ["P"],
-        "Р": ["R"],
-        "С": ["S"],
-        "Т": ["T"],
-        "Ќ": ["K", "KJ"],
-        "У": ["U"],
-        "Ф": ["F"],
-        "Х": ["H"],
-        "Ц": ["C"],
-        "Ч": ["Ch", "C"],
-        "Џ": ["Dz", "D"],
-        "Ш": ["Sh", "S"],
-    }
-
-    combinations = []
-    for char in text:
-        upper = char.upper()
-        if upper in alphabet:
-            # character is cyrillic
-            if char.isupper():
-                combinations.append(alphabet[upper])
-            else:
-                combinations.append([c.lower() for c in alphabet[upper]])
-        else:
-            combinations.append([char])
-
-    product = itertools.product(*combinations)
-    return ["".join(p) for p in product]
+from thesis_graph.utils import (
+    base_data_path,
+    convert_cyrillic_to_latin,
+    get_current_time_str,
+    save_json_to_file,
+)
 
 
 def get_scholar_profiles(
@@ -92,7 +41,7 @@ def search_for_multiple_cyrillic_names(
     save_path = (
         base_data_path
         / "scholar_crawls"
-        / f"profiles_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        / f"profiles_result_{get_current_time_str()}.json"
     )
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -112,8 +61,7 @@ def search_for_multiple_cyrillic_names(
                             **scholar_profile,
                         }
                     )
-                    with open(save_path, "w", encoding="utf-8") as f:
-                        json.dump(result_profiles, f, ensure_ascii=False, indent=4)
+                save_json_to_file(save_path, result_profiles)
                 break
 
         search_counter -= 1

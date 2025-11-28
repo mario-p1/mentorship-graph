@@ -65,7 +65,7 @@ def get_current_time_str():
 
 def save_json_to_file(save_path: Path, result: Any):
     with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
+        json.dump(result, f, indent=2, ensure_ascii=False)
 
 
 def load_json_file(path: Path):

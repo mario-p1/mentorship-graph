@@ -16,7 +16,7 @@ from thesis_graph.utils import (
 def get_scholar_profiles(
     client: serpapi.Client,
     query: str,
-) -> list[dict[str, Any]] | None:
+) -> list[dict[str, Any]]:
     params = {
         "engine": "google_scholar",
         "q": query,
@@ -26,12 +26,12 @@ def get_scholar_profiles(
     if "profiles" in result:
         return result["profiles"].get("authors", [])
 
-    return None
+    return []
 
 
-def search_for_multiple_cyrillic_names(
+def search_for_multiple_names(
     client: serpapi.Client,
-    cyrillic_names: list[str],
+    names: list[str],
     query_suffix="",
     max_searches: int = 5,
 ) -> list[dict[str, Any]]:
@@ -43,14 +43,15 @@ def search_for_multiple_cyrillic_names(
     )
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    for name in tqdm.tqdm(cyrillic_names):
+    for name in tqdm.tqdm(names):
         name_variants = convert_cyrillic_to_latin(name)
 
         for name_variant in name_variants:
             query = f"{name_variant}{query_suffix}"
 
             scholar_profiles = get_scholar_profiles(client, query)
-            if scholar_profiles is not None and len(scholar_profiles) > 0:
+
+            if len(scholar_profiles) > 0:
                 for scholar_profile in scholar_profiles:
                     result_profiles.append(
                         {
@@ -70,20 +71,20 @@ def search_for_multiple_cyrillic_names(
 
 
 def main():
-    client = get_serpapi_client()
-
     researchers = (
         load_thesis_csv(base_data_path / "committee.csv")["mentor"].unique().tolist()
     )
     query_suffix = ", FINKI"
 
-    # researchers = ["Ласко Баснарков", "Милош Јовановиќ"]
-    # query_suffix = ""
+    # researchers = ["CUSTOM NAME"]
+    # query_suffix = ", CUSTOM AFFILIATION"
+
+    client = get_serpapi_client()
 
     print("== Researchers ==")
     print(researchers)
 
-    search_for_multiple_cyrillic_names(
+    search_for_multiple_names(
         client,
         researchers,
         query_suffix=query_suffix,

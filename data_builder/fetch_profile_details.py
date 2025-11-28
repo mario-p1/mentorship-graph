@@ -25,6 +25,7 @@ def main():
     save_path = (
         base_data_path / "scholar_crawls" / f"details_{get_current_time_str()}.json"
     )
+    save_path.parent.mkdir(parents=True, exist_ok=True)
 
     result = {}
     for author_id in tqdm.tqdm(author_ids):

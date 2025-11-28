@@ -21,6 +21,8 @@ def main():
     scholar_profiles = load_json_file(base_data_path / "scholar_profiles.json")
     author_ids = [profile["author_id"] for profile in scholar_profiles]
 
+    # author_ids = ["CUSTOM_AUTHOR_ID"]
+
     client = get_serpapi_client()
     save_path = (
         base_data_path / "scholar_crawls" / f"details_{get_current_time_str()}.json"

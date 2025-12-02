@@ -5,8 +5,8 @@ import pandas as pd
 import torch
 from torch_geometric.data import HeteroData
 
-
 from thesis_graph.embedding import embed_text
+from thesis_graph.features import build_mentors_features_matrix
 
 
 def load_thesis_csv(path: Path) -> pd.DataFrame:
@@ -26,18 +26,35 @@ def load_thesis_csv(path: Path) -> pd.DataFrame:
     return df
 
 
-def build_graph(df: pd.DataFrame) -> tuple[HeteroData, dict[str, Any]]:
-    # Build thesis features
-    desc_embeddings = embed_text(df["thesis_desc_en"].tolist())
-    thesis_features = torch.from_numpy(desc_embeddings)
+def load_researchers_csv(path: Path) -> pd.DataFrame:
+    return pd.read_csv(
+        path,
+        converters={
+            "interests": lambda x: x.split("|") if x else [],
+            "articles": lambda x: x.split("|") if x else [],
+        },
+    )
 
-    # Mentors
-    mentors = sorted(df["mentor"].unique().tolist())
+
+def build_graph(
+    thesis_df: pd.DataFrame, researchers_df: pd.DataFrame
+) -> tuple[HeteroData, dict[str, Any]]:
+    # Build Mentors features
+    mentors = sorted(thesis_df["mentor"].unique().tolist())
     mentors_dict = {mentor: index for index, mentor in enumerate(mentors)}
 
+    researchers_features = build_mentors_features_matrix(
+        researchers_df.to_dict(orient="records"), mentors_dict
+    )
+    researchers_features = torch.from_numpy(researchers_features)
+
+    # Build thesis features
+    desc_embeddings = embed_text(thesis_df["thesis_desc_en"].tolist())
+    thesis_features = torch.from_numpy(desc_embeddings)
+
     # Supervises relation
-    supervises_mentor = df["mentor"].apply(lambda mentor: mentors_dict[mentor])
-    supervises_thesis = df.index.tolist()
+    supervises_mentor = thesis_df["mentor"].apply(lambda mentor: mentors_dict[mentor])
+    supervises_thesis = thesis_df.index.tolist()
     supervises_features = torch.vstack(
         [
             torch.LongTensor(supervises_thesis),
@@ -47,14 +64,17 @@ def build_graph(df: pd.DataFrame) -> tuple[HeteroData, dict[str, Any]]:
 
     # Build graph
     graph = HeteroData()
-    graph["thesis"].node_id = torch.arange(len(df))
+    graph["thesis"].node_id = torch.arange(len(thesis_df))
     graph["thesis"].x = thesis_features
+
     graph["mentor"].node_id = torch.arange(len(mentors))
+    graph["mentor"].x = researchers_features
 
     graph["thesis", "supervised_by", "mentor"].edge_index = supervises_features
     graph["mentor", "supervises", "thesis"].edge_index = supervises_features.flip(0)
 
     # Validate the constructed graph
-    graph.validate()
+    validate_result = graph.validate()
+    print("Graph validation result:", validate_result)
 
     return graph, {"mentors_dict": mentors_dict}

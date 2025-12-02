@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import mlflow
 import pandas as pd
 import torch
@@ -16,8 +14,9 @@ from sklearn.metrics import (
 from torch_geometric import seed_everything
 from torch_geometric.loader import LinkNeighborLoader
 
-from thesis_graph.data import build_graph, load_thesis_csv
+from thesis_graph.data import build_graph, load_researchers_csv, load_thesis_csv
 from thesis_graph.model import Model
+from thesis_graph.utils import base_data_path
 
 
 def train_epoch(
@@ -83,9 +82,9 @@ def main():
     disjoint_train_ratio = 0.7
     neg_sampling_train_ratio = 1
     neg_sampling_val_test_ratio = 1.0
-    num_epochs = 80
-    node_embedding_channels = 64
-    hidden_channels = 32
+    num_epochs = 100
+    node_embedding_channels = 128
+    hidden_channels = 64
     learning_rate = 0.0001
     gnn_num_layers = 2
 
@@ -95,10 +94,12 @@ def main():
     pd.options.display.max_rows = 20
     pd.options.display.max_columns = 20
 
-    df = load_thesis_csv(Path(__file__).parent.parent / "data" / "committee.csv")
+    df = load_thesis_csv(base_data_path / "committee.csv")
     # df = df.head(20)
 
-    data, metadata = build_graph(df)
+    researchers_df = load_researchers_csv(base_data_path / "researchers.csv")
+
+    data, metadata = build_graph(df, researchers_df)
 
     print("=> Data")
     print(data)

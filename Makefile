@@ -3,7 +3,7 @@ train:
 	uv run python -m thesis_graph.train
 
 .PHONY:
-mlflow_ui:
+mlflow:
 	uv run python -m mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 .PHONY:

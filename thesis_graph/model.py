@@ -1,3 +1,4 @@
+import mlflow
 import torch
 from torch import Tensor
 from torch_geometric.data import HeteroData
@@ -24,10 +25,15 @@ class Model(torch.nn.Module):
         data: HeteroData,
     ):
         super().__init__()
+
         self.thesis_lin = torch.nn.Linear(384, node_embedding_channels)
+
         self.thesis_emb = torch.nn.Embedding(
             data["thesis"].num_nodes, node_embedding_channels
         )
+
+        self.mentor_lin = torch.nn.Linear(384, node_embedding_channels)
+
         self.mentor_emb = torch.nn.Embedding(
             data["mentor"].num_nodes, node_embedding_channels
         )
@@ -42,10 +48,19 @@ class Model(torch.nn.Module):
         self.classifier = Classifier()
 
     def forward(self, data: HeteroData) -> Tensor:
+        thesis_node_repr = self.thesis_lin(data["thesis"].x) + self.thesis_emb(
+            data["thesis"].node_id
+        )
+        mlflow.log_param("using_thesis_node_features", True)
+
+        mentor_node_repr = self.mentor_lin(data["mentor"].x) + self.mentor_emb(
+            data["mentor"].node_id
+        )
+        mlflow.log_param("using_mentor_node_features", True)
+
         x_dict = {
-            "thesis": self.thesis_lin(data["thesis"].x)
-            + self.thesis_emb(data["thesis"].node_id),
-            "mentor": self.mentor_emb(data["mentor"].node_id),
+            "thesis": thesis_node_repr,
+            "mentor": mentor_node_repr,
         }
 
         x_dict = self.gnn(x_dict, data.edge_index_dict)

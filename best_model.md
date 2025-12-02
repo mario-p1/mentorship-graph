@@ -1,0 +1,42 @@
+# Parameters
+- NO mentor features
+Parameter
+Value
+embedding_model
+all-MiniLM-L6-v2
+disjoint_train_ratio
+0.7
+neg_sampling_train_ratio
+1
+neg_sampling_val_test_ratio
+1.0
+num_epochs
+80
+node_embedding_channels
+64
+hidden_channels
+32
+learning_rate
+0.0001
+gnn_num_layers
+2
+# Metrics
+MetricValue
+train_loss
+0.4698472658163084
+val_loss
+0.31468636227165997
+val_accuracy
+0.8573619631901841
+val_f1
+0.8570387817316328
+val_precision
+0.8949152542372881
+val_recall
+0.8098159509202454
+val_best_f1
+0.8570387817316328
+val_best_epoch
+80
+val_best_recall
+0.8098159509202454

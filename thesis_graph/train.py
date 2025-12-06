@@ -226,9 +226,9 @@ def main():
     print(f"=> Val best metrics (epoch: {val_best_epoch}):")
     print(val_best_report)
 
-    _, final_scores, final_preds, final_labels = validate(model, val_loader, device)
+    _, _, last_epoch_preds, last_epoch_labels = validate(model, val_loader, device)
     print("=> Latest epoch metrics:")
-    print(classification_report(final_labels, final_preds))
+    print(classification_report(last_epoch_labels, last_epoch_preds))
 
     # _, test_scores, test_preds, test_labels = validate(model, test_loader, device)
     # print("=> Test metrics:")
